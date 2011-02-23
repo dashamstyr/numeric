@@ -19,7 +19,7 @@ def initinter41(valueDict):
     return (t_beg,t_end,theCoeff,yinitial)
 
 def derivsinter41(coeff, y, theTime):
-    f=coeff.c1*y + coeff.c2*theTime+coeff.c3
+    f = coeff.c1*y + coeff.c2*theTime+coeff.c3
     return f
 
 def eulerinter41(coeff,y,theTime):
@@ -45,7 +45,6 @@ def rkckODEinter41(coeff,yold,told):
 ## initialize the Cash-Karp coefficients
 ## defined in the tableau in lab 4,
 ## section 3.5
-
   a = np.array([.2, 0.3, 0.6, 1.0, 0.875])
   c1 = np.array([37.0/378.0, 0.0, 250.0/621.0, 125.0/594.0, 0.0, 512.0/1771.0])
   c2= np.array([2825.0/27648.0, 0.0, 18575.0/48384.0, 13525.0/55296.0,
@@ -71,8 +70,8 @@ def rkckODEinter41(coeff,yold,told):
 # set up arrays
   
   derivArray=np.empty([6],'float')
-  ynext=np.empty_like(yold)
-  bsum=np.empty_like(yold)
+  ynext=np.zeros_like(yold) 
+  bsum=np.zeros_like(yold) 
   derivArray[0]=derivsinter41(coeff,yold,told)
   
 # calculate step
@@ -80,8 +79,8 @@ def rkckODEinter41(coeff,yold,told):
   y=yold
   for i in np.arange(5):
     bsum=0.
-    for j in np.arange(i):
-      bsum=bsum + b[i,j]*derivArray[j]
+    for j in np.arange(i+1): 
+        bsum=bsum + b[i,j]*derivArray[j]
     derivArray[i+1]=derivsinter41(coeff,y + coeff.dt*bsum,told + a[i]*coeff.dt)
     ynext = ynext + c1[i]*derivArray[i]
   y = y + coeff.dt*(ynext + c1[5]*derivArray[5])

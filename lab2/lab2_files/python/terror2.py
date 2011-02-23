@@ -22,7 +22,7 @@ if __name__=="__main__":
     exactTime=np.empty([npts,],np.float)
     exactTemp=np.empty_like(exactTime)
     for i in np.arange(0,npts):
-        exactTime[i] = tend*(i-1)/npts
+        exactTime[i] = tend*i/npts
         exactTemp[i] = Ta + (To-Ta)*np.exp(theLambda*exactTime[i])
     plt.plot(exactTime,exactTemp,'r+')
     plt.hold(False)

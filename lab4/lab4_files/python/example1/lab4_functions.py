@@ -34,7 +34,7 @@ def rk4ODE(coeff, y):
   k2 = coeff.dt * derivs4(coeff,y + (0.5 * k1))
   k3 = coeff.dt * derivs4(coeff,y + (0.5 * k2))
   k4 = coeff.dt * derivs4(coeff,y +  k3)
-  ynew = yy + (1.0/6.0) * (k1 + (2.0 * k2) + (2.0 * k3) + k4)
+  ynew = y + (1.0/6.0) * (k1 + (2.0 * k2) + (2.0 * k3) + k4)
   return ynew
 
 if __name__ == "__main__":

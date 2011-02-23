@@ -3,7 +3,7 @@
 
 """
 import matplotlib.pyplot as plt
-from functions import euler,beuler,leapfrog
+from lab2_functions import euler,beuler,leapfrog
 import numpy as np
 
 

@@ -66,11 +66,11 @@ def euler(npts,tend,To,Ta,theLambda):
     return (theTime,theTemp)
 
 def beuler(npts,tend,To,Ta,theLambda):
-    pdb.set_trace()
+    #pdb.set_trace()
     dt=tend/npts;
     theTemp=np.empty([npts,],np.float64)
     theTemp[0]=To
-    theTime=np.empty_like(theTemp)
+    theTime=np.zeros_like(theTemp)
     for timeStep in np.arange(1,npts):
         theTime[timeStep]=theTime[timeStep-1] + dt
         theTemp[timeStep] = (theTemp[timeStep-1]-theLambda*dt*Ta)/(1-theLambda*dt)
