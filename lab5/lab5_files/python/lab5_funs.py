@@ -62,6 +62,7 @@ class MyConfigParser(ConfigParser):
 
 class Integrator(object):
     def __init__(self,coeffFileName):
+        print "debug:  Inside Integrator III"
         config = MyConfigParser()
         #
         #preserve case of config variable names
