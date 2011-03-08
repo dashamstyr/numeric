@@ -21,13 +21,12 @@ just as easily be daisies per square km.  In the same way
 a fox "area" of 0.1 could be 0.1 foxes per square km, or
 1 fox every 10 square km.
 
-II) Use the steady-state version of your equations to come up
-with an analytic expression for Aw, Ab, Af and Ar in terms of
-a (single) death rate chi and birth rates beta_w = beta_b,
-beta_f and beta_r. How broad is the range of initial conditions
-that produce this steady state?  What range of death/birth
-coefficients yield a steady state where one or both of
-rabbits and foxes are not extinct?
+II) Use the steady-state version of your equations to come up with an
+analytic expression for Aw, Ab, Af and Ar in terms of a death rate chi
+(distinct for each component) and birth rates beta_w = beta_b, beta_f
+and beta_r. How broad is the range of initial conditions that produce
+this steady state?  What range of death/birth coefficients yield a
+steady state where one or both of rabbits and foxes are not extinct?
 
 
 
