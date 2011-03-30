@@ -13,6 +13,21 @@
       this is nice, but slower than Matlab
     - don't know how to pass a structure of parameters out of param() and
       numer_init(), so returning mega-tuples instead
+
+   optimize with ndimage.convolve
+     http://stackoverflow.com/questions/4692196/discrete-laplacian-del2-equivalent-in-python
+
+  output with numpy.io.save or hdf
+     http://docs.scipy.org/doc/numpy/reference/generated/numpy.save.html
+      http://code.google.com/p/h5py/
+      http://www.pytables.org/moin
+
+   benchmark:
+     start_time = time.time()
+     u_y = ufunc(x)
+     u_time = time.time() - start_time
+     print 'ufunc: %.6f sec' % u_time
+   
 """
 import numpy as np
 import matplotlib.pyplot as plt
