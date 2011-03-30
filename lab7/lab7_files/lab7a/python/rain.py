@@ -36,7 +36,7 @@ import copy
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os,glob
 
 class Quantity(object):
     """Generic quantity to define the data structures and method that
@@ -147,16 +147,18 @@ def animate(u, h, ho, dt, n_time):
     """
     # Turn interactive mode on so that the graph displays can be
     # update at each time step
-    plt.ion()
+    #plt.ion()
     # Create a figure with 2 sub-plots
-    fig = plt.figure()
+    fignum=1
+    fig = plt.figure(fignum)
+    fig.clf()
     fig.subplots_adjust(left=0.17)
     ax_u = plt.subplot(211)
     ax_h = plt.subplot(212)
     # Set the figure title, and the axes labels.  Capture the
     # generated title text object so that we can update it in the time
     # step loop.
-    title = fig.text(0.45, 0.95, 'Results at t = 0.000s')
+    the_title = fig.text(0.45, 0.95, 'Results at t = %.3fs' % 0)
     ax_u.set_ylabel('u [cm/s]')
     ax_h.set_ylabel('h [cm]')
     ax_h.set_xlabel('Grid Point')
@@ -169,14 +171,29 @@ def animate(u, h, ho, dt, n_time):
     h_line, = ax_h.plot(h.store[:, 0])
     ax_h.set_ylim((-ho, ho))
     # Display the initial conditions
+    the_time=0
+    plotdir='plotfiles'
+    if not os.path.exists(plotdir):
+        os.mkdir(plotdir)
+    else:
+        #if directory exists, clear the pngfiles
+        filenames="%s%s*.png" % (plotdir,os.sep)
+        plotfiles=glob.glob(filenames)
+        for the_file in plotfiles:
+            os.remove(the_file)
+    plotname="%s%splot_%04d.png" % (plotdir,os.sep,the_time)
     plt.draw()
-    for t in xrange(1, n_time):
+    plt.savefig(plotname,dpi=150)
+    for the_time in xrange(1, n_time):
         # Update the figure title, and lines data at each time step,
         # and re-draw them
-        title.set_text('Results at t = %.3fs' % (dt * t))
-        u_line.set_ydata(u.store[:, t])
-        h_line.set_ydata(h.store[:, t])
+        the_title.set_text('Results at t = %.3fs' % (dt * the_time))
+        plotname="%s%splot_%04d.png" % (plotdir,os.sep,the_time)
+        u_line.set_ydata(u.store[:, the_time])
+        h_line.set_ydata(h.store[:, the_time])
+        print "plot: ",plotname
         plt.draw()
+        plt.savefig(plotname,dpi=150)
 
 
 def main(args):
@@ -224,6 +241,7 @@ def main(args):
         h.store_timestep(t)
         u.shift()
         h.shift()
+        print "time step: ",t
     # Print the results
     np.set_printoptions(suppress=True)
     print 'u:\n', u.store
@@ -239,9 +257,17 @@ if __name__ == '__main__':
     # `sphinx-build`. The latter is a necessary hack to accommodate
     # the sphinx plot_directive extension that allows this module to
     # be run to include its graph in sphinx-generated docs.
+    #
+    #  the following command, executed in the plotfile directory makes a movie on ubuntu called
+    #   outputmplt.avi
+    #  which can be
+    #  looped with mplayer -loop 0
+    #
+    #  mencoder mf://*.png -mf type=png:w=800:h=600:fps=25 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o outputmplt.avi
+    #
     if len(sys.argv) == 1 or 'sphinx-build' in sys.argv[0]:
-        # Default to 5 time steps, and 9 grid points
-        main((5, 9))
+        # Default to 50 time steps, and 9 grid points
+        main((50, 9))
     elif len(sys.argv) == 3:
         # Run with the number of time steps and grid point the user gave
         main(sys.argv[1:])
