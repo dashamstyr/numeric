@@ -32,6 +32,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os, glob
+import copy
 
 
 def param():
@@ -74,8 +75,6 @@ def param():
     print "time = ", time
     print "boundary_layer_width_approx = ", boundary_layer_width_approx
 
-    # unsure how to write/read data to disk, saving png plots instead,
-    # this is nice, but slower than Matlab
     return (b, a, totaltime, epsilon, wind, vis, time)
 
 
@@ -106,8 +105,6 @@ def numer_init():
     print "max = ", max
     print "coeff = ", coeff
 
-    # unsure how to write/read data to disk, saving png plots instead,
-    # this is nice, but slower than Matlab
     return (nx, dx, ny, dt, plotcount, tol, max, coeff)
 
 
@@ -181,9 +178,10 @@ def wind(psi,nx,ny):
     
     return windy
 
+
 def relax(rhs,chi_prev,dx,nx,ny,r_coeff,tol,max_count):
     d2 = 1./(dx*dx)
-    chi = chi_prev
+    chi = copy.copy(chi_prev)
     chi1 = np.zeros_like(chi)
     r = np.zeros((nx,ny))
 
@@ -218,8 +216,6 @@ def relax(rhs,chi_prev,dx,nx,ny,r_coeff,tol,max_count):
     return  (chi,count)
 
 
-# unsure how to write/read data to disk, saving png plots instead,
-# this is nice, but slower than Matlab
 #def plotter(myfile):
 #    psi = np.zeros((16,16))
 #    S = np.fromfile(myfile)
@@ -235,7 +231,7 @@ if __name__=="__main__":
     # initialize the numerical parameters
     (nnx, ndx, nny, ndt, nplotcount, ntol, nmax, ncoeff) = numer_init()
 
-    # initialize the arrays (need 2)
+    # initialize the arrays (need 2 because chi depends on psi at 2 time steps)
     psi_1=np.zeros((nnx,nny))
     psi_2=np.zeros((nnx,nny))
 
@@ -274,13 +270,13 @@ if __name__=="__main__":
         print "t= ", t
         
         # update viscosity
-        vis_prev = vis_curr
+        vis_prev = copy.copy(vis_curr)
         vis_curr = vis(psi_1,nnx,nny)
         # find chi, take a step
         (chii,c) = chi(psi_1,vis_curr,vis_prev,chi_prev,nnx,nny,ndx,ncoeff,ntol, \
                        nmax,pepsilon,pwind,pvis)
         psi_2 = psi_2 + dt*chii
-        chi_prev = chii
+        chi_prev = copy.copy(chii)
         count_total=count_total+c
         
         # do exactly the same thing again with opposite psi arrays
@@ -288,27 +284,22 @@ if __name__=="__main__":
         t = t + dt
         print "t= ", t
         
-        vis_prev = vis_curr
+        vis_prev = copy.copy(vis_curr)
         vis_curr = vis(psi_2,nnx,nny)
         [chii,c] = chi(psi_2,vis_curr,vis_prev,chi_prev,nnx,nny,ndx,ncoeff,ntol, \
                        nmax,pepsilon,pwind,pvis)
         psi_1 = psi_1 + dt*chii
-        chi_prev = chii
+        chi_prev = copy.copy(chii)
 
         count_total=count_total+c
         count = count + 1
 
-        # write out psi to a file so it can later be plotted
-        # unsure how to write/read data to disk, saving png plots instead,
-        # this is nice, but slower than Matlab
-        
+        # write out psi to a file so it can later be plotted       
         if (nplotcount==count):
             plt.figure()
             plotname = '%s%sPsi%d.png' %(plotdir,os.sep,plotnum)
             plotnum +=1
 
-            # unsure how to write/read data to disk, saving png plots instead,
-            # this is nice, but slower than Matlab
             #myfile = open (stringt,'w')
             #for j in range (0,nny):
             #    for i in range (0,nnx):
@@ -319,8 +310,6 @@ if __name__=="__main__":
             # write out to screen the name of the plot file
             print 'Wrote File %s\n' %(plotname)
 
-            # unsure how to write/read data to disk, saving png plots instead,
-            # this is nice, but slower than Matlab
             plt.contour(np.transpose(psi_1))
             plottitle = 'Results at t = %.0f days' %(t*ptime/86400)
             plt.title(plottitle)
