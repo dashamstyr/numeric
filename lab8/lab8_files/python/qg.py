@@ -209,7 +209,7 @@ def relax(rhs,chi_prev,dx,nx,ny,r_coeff,tol,max_count):
         else:
             rr=r_max/chi_max
             print "rr= ", rr
-            count = count + 1
+        count = count + 1
     
     print "count= ", count
 
