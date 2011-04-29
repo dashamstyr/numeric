@@ -2,37 +2,34 @@
     March 2011
 
     To run:
-    > ipyton -pylab
-    > run qg
+    >> ipyton -pylab
+    >> run qg
     - plots are stored in the plotfiles directory
     - Quicktime can be used to make a movie from png files by using
       File > Open Image Sequence...
 
     Initial release known issues and to do:
-    - unsure how to write/read data to disk, saving png plots instead,
-      this is nice, but slower than Matlab
-    - don't know how to pass a structure of parameters out of param() and
-      numer_init(), so returning mega-tuples instead
-
-   optimize with ndimage.convolve
-     http://stackoverflow.com/questions/4692196/discrete-laplacian-del2-equivalent-in-python
+    - saving png plots instead, this could be optimized by writing
+      streamfunction array to disk and plotting later
+    - could convert to object oriented to allocate memory for
+      fields once for the entire run
 
   output with numpy.io.save or hdf
      http://docs.scipy.org/doc/numpy/reference/generated/numpy.save.html
       http://code.google.com/p/h5py/
-      http://www.pytables.org/moin
-
-   benchmark:
-     start_time = time.time()
-     u_y = ufunc(x)
-     u_time = time.time() - start_time
-     print 'ufunc: %.6f sec' % u_time
-   
+      http://www.pytables.org/moin   
 """
 import numpy as np
 import matplotlib.pyplot as plt
 import os, glob
 import copy
+# inline C code
+import scipy.weave
+# benchmarking
+from time import time
+# convolve for Laplacian
+from scipy import ndimage
+import scipy.ndimage.filters
 
 
 def param():
@@ -110,20 +107,38 @@ def numer_init():
 
 def vis(psi,nx,ny):
     visc = np.zeros((nx,ny));
+    
+    # loop version
+    # comment out if using 2-D convolution with stencil
+    ## for i in range(1, nx-1):
+    ##     for j in range(1, ny-1):
+    ##         visc[i,j] = psi[i+1,j]+psi[i-1,j]+psi[i,j+1]+psi[i,j-1]-4*psi[i,j]
 
-    for i in range(1, nx-1):
-        for j in range(1, ny-1):
-            visc[i,j] = psi[i+1,j]+psi[i-1,j]+psi[i,j+1]+psi[i,j-1]-4*psi[i,j]
+    # version using 2-D convolution with stencil
+    # comment out if using loop
+    
+    # 5-point centered difference Laplacian stencil
+    stencil = np.array([[0., 1., 0.],[1., -4., 1.], [0., 1., 0.]])
+    visc = ndimage.convolve(psi, stencil)
 
     return visc
 
 
 def mybeta(psi,nx,ny):
     beta = np.zeros((nx,ny))
+
+    # loop version
+    # comment out if using 2-D convolution with stencil
+    ## for i in range(1,nx-1):
+    ##     for j in range(1,ny-1):
+    ##         beta[i,j] = psi[i+1,j]-psi[i-1,j]
+
+    # version using 2-D convolution with stencil
+    # comment out if using loop
     
-    for i in range(1,nx-1):
-        for j in range(1,ny-1):
-            beta[i,j] = psi[i+1,j]-psi[i-1,j]
+    # stencil for beta term
+    stencil = np.array([[0., -1., 0.],[0., 0., 0.],[0., 1., 0.]])
+    beta = ndimage.convolve(psi, stencil)
 
     return beta
 
@@ -131,20 +146,39 @@ def mybeta(psi,nx,ny):
 def jac(psi,vis,nx,ny):
     jaco = np.zeros((nx,ny))
 
-    for i in range(1,nx-1):
-        for j in range(1,ny-1):
-            # Arakawa Jacobian
-            jaco[i,j] =((psi[i+1,j]-psi[i-1,j])*(vis[i,j+1]-vis[i,j-1])- \
-                        (psi[i,j+1]-psi[i,j-1])*(vis[i+1,j]-vis[i-1,j])+ \
-                        psi[i+1,j]*(vis[i+1,j+1]-vis[i+1,j-1])-psi[i-1,j]* \
-                        (vis[i-1,j+1]-vis[i-1,j-1])-psi[i,j+1]* \
-                        (vis[i+1,j+1]-vis[i-1,j+1])+psi[i,j-1]* \
-                        (vis[i+1,j-1]-vis[i-1,j-1])+vis[i,j+1]* \
-                        (psi[i+1,j+1]-psi[i-1,j+1])-vis[i,j-1]* \
-                        (psi[i+1,j-1]-psi[i-1,j-1])-vis[i+1,j]* \
-                        (psi[i+1,j+1]-psi[i+1,j-1])+vis[i-1,j]* \
-                        (psi[i-1,j+1]-psi[i-1,j-1]))*0.33333333
-
+    # loop based python version of code
+    # comment out if using inline C code
+    ## for i in range(1,nx-1):
+    ##     for j in range(1,ny-1):
+    ##         # Arakawa Jacobian
+    ##         jaco[i,j] =((psi[i+1,j]-psi[i-1,j])*(vis[i,j+1]-vis[i,j-1])- \
+    ##                     (psi[i,j+1]-psi[i,j-1])*(vis[i+1,j]-vis[i-1,j])+ \
+    ##                     psi[i+1,j]*(vis[i+1,j+1]-vis[i+1,j-1])-psi[i-1,j]* \
+    ##                     (vis[i-1,j+1]-vis[i-1,j-1])-psi[i,j+1]* \
+    ##                     (vis[i+1,j+1]-vis[i-1,j+1])+psi[i,j-1]* \
+    ##                     (vis[i+1,j-1]-vis[i-1,j-1])+vis[i,j+1]* \
+    ##                     (psi[i+1,j+1]-psi[i-1,j+1])-vis[i,j-1]* \
+    ##                     (psi[i+1,j-1]-psi[i-1,j-1])-vis[i+1,j]* \
+    ##                     (psi[i+1,j+1]-psi[i+1,j-1])+vis[i-1,j]* \
+    ##                     (psi[i-1,j+1]-psi[i-1,j-1]))*0.33333333
+    
+    # inline C based version of code
+    # comment out if using python code
+    code = \
+         """
+        int i, j;
+        for(i = 1; i < nx-1; i++)
+           for(j = 1; j < ny-1; j++)
+              jaco[i*ny+j] =((psi[(i+1)*ny+j]-psi[(i-1)*ny+j])*(vis[i*ny+j+1]-vis[i*ny+j-1])-
+              (psi[i*ny+j+1]-psi[i*ny+j-1])*(vis[(i+1)*ny+j]-vis[(i-1)*ny+j])+psi[(i+1)*ny+j]*
+              (vis[(i+1)*ny+j+1]-vis[(i+1)*ny+j-1])-psi[(i-1)*ny+j]*(vis[(i-1)*ny+j+1]-vis[(i-1)*ny+j-1])-
+              psi[i*ny+j+1]*(vis[(i+1)*ny+j+1]-vis[(i-1)*ny+j+1])+psi[i*ny+j-1]*(vis[(i+1)*ny+j-1]-
+              vis[(i-1)*ny+j-1])+vis[i*ny+j+1]*(psi[(i+1)*ny+j+1]-psi[(i-1)*ny+j+1])-vis[i*ny+j-1]*
+              (psi[(i+1)*ny+j-1]-psi[(i-1)*ny+j-1])-vis[(i+1)*ny+j]*(psi[(i+1)*ny+j+1]-psi[(i+1)*ny+j-1])+
+              vis[(i-1)*ny+j]*(psi[(i-1)*ny+j+1]-psi[(i-1)*ny+j-1]))*0.33333333;
+        """
+    scipy.weave.inline(code, ['jaco','psi','vis','nx','ny'])
+    
     return jaco
 
 
@@ -180,52 +214,78 @@ def wind(psi,nx,ny):
 
 
 def relax(rhs,chi_prev,dx,nx,ny,r_coeff,tol,max_count):
-    d2 = 1./(dx*dx)
     chi = copy.copy(chi_prev)
-    chi1 = np.zeros_like(chi)
     r = np.zeros((nx,ny))
 
     rr = 1e50
     count = 0
 
-    while (rr>tol) & (count<max_count): 
-        chi_max=0.
-        r_max = 0.
+    # loop based python version of code
+    # comment out if using inline C code
+    ## while (rr>tol) & (count<max_count): 
+    ##     chi_max=0.
+    ##     r_max = 0.
 
-        for i in range(1,nx-1):
-            for j in range(1,ny-1):
-                r[i,j] = rhs[i,j]*dx*dx*0.25-((chi[i+1,j]+chi[i,j+1]+chi[i-1,j]+ \
-                                               chi[i,j-1])*0.25-chi[i,j])
-                if (np.abs(chi[i,j]) > chi_max):
-                    chi_max = np.abs(chi[i,j])
-                if (np.abs(r[i,j]) > r_max):
-                    r_max = np.abs(r[i,j])
-                chi[i,j] = chi[i,j]-r_coeff*r[i,j]
+    ##     for i in range(1,nx-1):
+    ##         for j in range(1,ny-1):
+    ##             r[i,j] = rhs[i,j]*dx*dx*0.25-((chi[i+1,j]+chi[i,j+1]+chi[i-1,j]+ \
+    ##                                            chi[i,j-1])*0.25-chi[i,j])
+    ##             if (np.abs(chi[i,j]) > chi_max):
+    ##                 chi_max = np.abs(chi[i,j])
+    ##             if (np.abs(r[i,j]) > r_max):
+    ##                 r_max = np.abs(r[i,j])
+    ##             chi[i,j] = chi[i,j]-r_coeff*r[i,j]
 
-        # enforce boundary conditions (zero psi/zero chi) nothing to do.
+    ##     # enforce boundary conditions (zero psi/zero chi) nothing to do.
 
-        if (chi_max==0): 
-            rr=1e50 
-        else:
-            rr=r_max/chi_max
-            print "rr= ", rr
-        count = count + 1
+    ##     if (chi_max==0): 
+    ##         rr=1e50 
+    ##     else:
+    ##         rr=r_max/chi_max
+    ##         print "rr= ", rr
+    ##     count = count + 1
     
-    print "count= ", count
+    ## print "count= ", count
+
+    # inline C based version of code
+    # comment out if using python code
+    # use inline C code
+    code = \
+         """
+         while((rr>tol) && (count<max_count)) {
+           float chi_max = 0.0;
+           float r_max = 0.0;
+           int i, j;
+           for(i = 1; i < nx-1; i++)
+             for(j = 1; j < ny-1; j++) {
+               r[i*ny+j] = rhs[i*ny+j]*dx*dx*0.25-((chi[(i+1)*ny+j]+
+                 chi[i*ny+j+1]+chi[(i-1)*ny+j]+chi[i*ny+j-1])*0.25-
+                 chi[i*ny+j]);
+               if (fabs(chi[i*ny+j]) > chi_max)
+                 chi_max = fabs(chi[i*ny+j]);
+               if (fabs(r[i*ny+j]) > r_max)
+                 r_max = fabs(r[i*ny+j]);
+               chi[i*ny+j] = chi[i*ny+j]-r_coeff*r[i*ny+j];
+             }
+
+           if (chi_max == 0)
+             rr = 1.0e50;
+           else
+             rr = r_max/chi_max;
+             printf("rr= %f \\n", rr);
+           count++;
+         }
+         #"""
+    scipy.weave.inline(code, ['nx','ny','dx','tol','max_count', 'r_coeff', 'r', \
+                              'rhs', 'chi', 'rr', 'count'])
 
     return  (chi,count)
 
 
-#def plotter(myfile):
-#    psi = np.zeros((16,16))
-#    S = np.fromfile(myfile)
-#
-#    for i in range(0,16):
-#        for j in range(0,16):
-#            psi[i,j] = S((i)*16+j)
-#    plt.contour(psi)
-
 if __name__=="__main__":
+    # start benchmarking
+    start=time()
+    
     # initialize the physical parameters
     (pb, pa, ptotaltime, pepsilon, pwind, pvis, ptime) = param()
     # initialize the numerical parameters
@@ -300,13 +360,6 @@ if __name__=="__main__":
             plotname = '%s%sPsi%d.png' %(plotdir,os.sep,plotnum)
             plotnum +=1
 
-            #myfile = open (stringt,'w')
-            #for j in range (0,nny):
-            #    for i in range (0,nnx):
-            #        myfile.write(' %f\n' %(psi_1[i,j]))
-            #    myfile.write('\n')
-            #myfile.close()
-
             # write out to screen the name of the plot file
             print 'Wrote File %s\n' %(plotname)
 
@@ -318,3 +371,6 @@ if __name__=="__main__":
             count = 0
             
     print "count_total", count_total
+
+    # end benchmarking
+    print '\nExecution time: ', time()-start, 'seconds'
